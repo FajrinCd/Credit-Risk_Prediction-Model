@@ -69,6 +69,8 @@ output/
 9. **PSI stability check**
 10. **Model export + deployment template**
 
+---
+
 ## FastAPI Deployment
 
 Start service:
@@ -97,7 +99,7 @@ Response:
 
 ---
 
-## 📝 Notes
+## Notes
 
 * The dataset is not included due to size constraints.
 * SHAP is computed using up to 500 samples for performance.
