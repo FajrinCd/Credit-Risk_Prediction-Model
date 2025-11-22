@@ -41,12 +41,11 @@ The workflow includes **data cleaning, feature engineering, model training, eval
 Generated under the **output/** directory:
 
 ```
-output/
-│── best_model_<name>.joblib
-│── eval_results.json
-│── psi_values.json
-│── model_card.json
-└── app.py   # FastAPI service
+best_model_<name>.joblib
+eval_results.json
+psi_values.json
+model_card.json
+app.py   # FastAPI service
 ```
 
 ---
