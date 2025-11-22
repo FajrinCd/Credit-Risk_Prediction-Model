@@ -1,0 +1,70 @@
+# ===============================
+# Python
+# ===============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.pickle
+
+# Virtual environments
+venv/
+.env/
+env/
+.venv/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# ===============================
+# Model Artifacts
+# ===============================
+*.joblib
+*.sav
+*.h5
+*.model
+
+# Output directory
+output/
+logs/
+models/
+artifacts/
+
+# ===============================
+# Data
+# ===============================
+data/
+*.csv
+*.xlsx
+*.json
+*.zip
+
+# Exceptions (uncomment if you want to keep sample files)
+# !data/sample.csv
+
+# ===============================
+# OS Files
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# FastAPI / Web
+# ===============================
+*.log
+uvicorn.log
+
+# ===============================
+# IDE Files
+# ===============================
+# VSCode
+.vscode/
+# PyCharm
+.idea/
+
+# ===============================
+# Misc
+# ===============================
+*.tmp
+*.bak
