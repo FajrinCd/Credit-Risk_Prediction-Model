@@ -1,7 +1,11 @@
 # Credit Risk Modeling — LendingClub Dataset (2007–2014)
 
+---
+
 This project provides an end-to-end pipeline for building a **Credit Risk Prediction Model** using LendingClub loan data from 2007–2014.
 The workflow includes **data cleaning, feature engineering, model training, evaluation, explainability, PSI monitoring**, and a **FastAPI deployment template**.
+
+---
 
 
 ## Key Features
@@ -30,6 +34,8 @@ The workflow includes **data cleaning, feature engineering, model training, eval
   * `model_card.json`
   * `FastAPI` prediction service
 
+---
+
 ## Output Files
 
 Generated under the **output/** directory:
@@ -42,6 +48,8 @@ output/
 │── model_card.json
 └── app.py   # FastAPI service
 ```
+
+---
 
 ## Overview of the Pipeline
 
@@ -94,3 +102,8 @@ Response:
 * The dataset is not included due to size constraints.
 * SHAP is computed using up to 500 samples for performance.
 * All features are fully numeric after preprocessing.
+
+---
+
+For questions or feedback, open an issue on GitHub or contact the maintainer: **[dgartup@gmail.com](mailto:dgartup@gmail.com)**
+Happy coding! 🚀
