@@ -81,74 +81,92 @@ percentage_bad_status = loan['bad_status'].mean() * 100
 print(f"\nPercentage of bad status: {percentage_bad_status:.2f}%")
 loan.drop('loan_status', axis=1, inplace=True)
 
-# Data Cleaning
+# Data Transformation
 # 'emp_length' Column
-# Define a mapping for employment length to numerical values
-emp_length_mapping = {
-    '< 1 year': 0.5,
-    '1 year': 1,
-    '2 years': 2,
-    '3 years': 3,
-    '4 years': 4,
-    '5 years': 5,
-    '6 years': 6,
-    '7 years': 7,
-    '8 years': 8,
-    '9 years': 9,
-    '10+ years': 10,
-    'unknown': np.nan # Handle 'unknown' from previous cleaning as NaN
-}
-
-# Ensure 'emp_length' is string type and handle NaN before mapping
-loan['emp_length_cleaned'] = loan['emp_length'].astype(str).str.strip().str.lower().replace({'nan': 'unknown', '': 'unknown'})
-loan['emp_length_num'] = loan['emp_length_cleaned'].map(emp_length_mapping)
-# Convert to numeric, coercing any remaining errors to NaN
-loan['emp_length_num'] = pd.to_numeric(loan['emp_length_num'], errors='coerce')
-
-print(f"Converted 'emp_length' to numerical column 'emp_length_num': \n{loan['emp_length_num'].head()}")
-loan.drop(['emp_length', 'emp_length_cleaned'], axis=1, inplace=True)
+loan['emp_length'].unique()
+loan['emp_length_num'] = loan['emp_length'].str.replace(r'\D', '', regex=True)
+print(loan['emp_length_num'].describe())
+loan.drop('emp_length', axis=1, inplace=True)
 
 # 'term' Column
-print("--- Processing 'term' column ---")
+loan['term']
 loan['term_num'] = loan['term'].str.replace('months','').astype(float)
-print(f"Converted 'term' to numerical column 'term_num': \n{loan['term_num'].head()}")
+print(loan['term_num'].describe())
 loan.drop('term', axis=1, inplace=True)
 
-# 'earliest_cr_line'
-print("--- Processing 'earliest_cr_line' column ---")
-print(loan['earliest_cr_line'].head())
+# 'earliest_cr_line' column
+loan['earliest_cr_line'].unique()
+# The earliest_cr_line column contains strings, such as "Jan-15"
+loan['earliest_cr_line_bY'] = pd.to_datetime(loan['earliest_cr_line'], format='%b-%y')
+latest_date = loan['earliest_cr_line_bY'].max()
+earliest_date = loan['earliest_cr_line_bY'].min()
+print("The latest date:", latest_date)
+print("The earliest date", earliest_date)
+
+reference_year = pd.Timestamp('2017-12-01')
+loan.loc[loan['earliest_cr_line_bY'].dt.year > reference_year.year, 'earliest_cr_line_bY'] -= pd.offsets.DateOffset(years=100)
 # Correct column name 'earliest_cr_line' and format '%b-%y'
-loan['earliest_cr_year'] = pd.to_datetime(loan['earliest_cr_line'], format='%b-%y', errors='coerce').dt.year
-print(f"Converted 'earliest_cr_line' to numerical year 'earliest_cr_year': \n{loan['earliest_cr_year'].head()}")
-loan.drop('earliest_cr_line', axis=1, inplace=True)
+loan['months_since_earliest_cr_line'] = round(reference_year - loan['earliest_cr_line_bY']).dt.days / 30
+print(loan['months_since_earliest_cr_line'].describe())
+loan.drop(['earliest_cr_line', 'earliest_cr_line_bY'], axis=1, inplace=True)
 
-# ' issue_d'
-print("--- Processing 'issue_d' column ---")
-loan['issue_d_date'] = pd.to_datetime(loan['issue_d'], format='%b-%y', errors='coerce')
-loan['issue_d_month'] = round(pd.to_datetime('2017-12-01') - loan['issue_d_date']).dt.days/30
-print(f"Converted 'issue_d' to numerical month 'issue_d_month': \n{loan['issue_d_month'].head()}")
-loan.drop(['issue_d', 'issue_d_date'], axis=1, inplace=True)
+# ' issue_d' column
+loan['issue_d']
+# The issue_d column contains strings, such as "Jan-15"
+loan['issue_d_bY'] = pd.to_datetime(loan['issue_d'], format='%b-%y')
+latest_date = loan['issue_d_bY'].max()
+earliest_date = loan['issue_d_bY'].min()
+print("The latest date:", latest_date)
+print("The earliest date:", earliest_date)
 
-# 'last_pymnt_d'
-print("--- Processing 'last_pymnt_d' column ---")
-loan['last_pymnt_d_date'] = pd.to_datetime(loan['last_pymnt_d'], format='%b-%y', errors='coerce')
-loan['last_pymnt_d_month'] = round(pd.to_datetime('2017-12-01') - loan['last_pymnt_d_date']).dt.days/30
-print(f"Converted 'last_pymnt_d' to numerical month: \n{loan['last_pymnt_d_month'].head()}")
-loan.drop(['last_pymnt_d', 'last_pymnt_d_date'],  axis=1, inplace=True)
+reference_year = pd.Timestamp('2017-12-01')
+loan.loc[loan['issue_d_bY'].dt.year > reference_year.year, 'issue_d_bY'] -= pd.offsets.DateOffset(years=100)
+# Correct column name 'issue_d' and format '%b-%y'
+loan['months_since_issue_d'] = round(reference_year - loan['issue_d_bY']).dt.days / 30
+print(loan['months_since_issue_d'].describe())
+loan.drop(['issue_d', 'issue_d_bY'], axis=1, inplace=True)
 
-# 'next_pymnt_d'
-print("--- Processing 'next_pymnt_d' column ---")
-loan['next_pymnt_d_date'] = pd.to_datetime(loan['next_pymnt_d'], format='%b-%y', errors='coerce')
-loan['next_pymnt_d_month'] = round(pd.to_datetime('2017-12-01') - loan['next_pymnt_d_date']).dt.days/30
-print(f"Converted 'next_pymnt_d' to numerical month: \n{loan['next_pymnt_d_month'].head()}")
-loan.drop(['next_pymnt_d', 'next_pymnt_d_date'], axis=1, inplace=True)
+# 'last_pymnt_d' column
+loan['last_pymnt_d']
+# The last_pymnt_d column contains strings, such as "Jan-15"
+loan['last_pymnt_d_bY'] = pd.to_datetime(loan['last_pymnt_d'], format='%b-%y')
+latest_date = loan['last_pymnt_d_bY'].max()
+earliest_date = loan['last_pymnt_d_bY'].min()
+print("The latest date:", latest_date)
+print("The earliest date:", earliest_date)
 
-# 'last_credit_pull_d'
-print("--- Processing 'last_credit_pull_d' column ---")
-loan['last_credit_pull_d_date'] = pd.to_datetime(loan['last_credit_pull_d'], format='%b-%y', errors='coerce')
-loan['last_credit_pull_d_month'] = round(pd.to_datetime('2017-12-01') - loan['last_credit_pull_d_date']).dt.days/30
-print(f"Converted 'last_credit_pull_d' to numerical month: \n{loan['last_credit_pull_d_month'].head()}")
-loan.drop(['last_credit_pull_d', 'last_credit_pull_d_date'], axis=1, inplace=True)
+# Correct column name 'last_pymnt_d' and format '%b-%y'
+loan['months_since_last_pymnt_d'] = round(reference_year - loan['last_pymnt_d_bY']).dt.days / 30
+print(loan['months_since_last_pymnt_d'].describe())
+loan.drop(['last_pymnt_d', 'last_pymnt_d_bY'], axis=1, inplace=True)
+
+# 'next_pymnt_d' column
+loan['next_pymnt_d']
+# The next_pymnt_d column contains strings, such as "Jan-15"
+loan['next_pymnt_d_bY'] = pd.to_datetime(loan['next_pymnt_d'], format='%b-%y')
+latest_date = loan['next_pymnt_d_bY'].max()
+earliest_date = loan['next_pymnt_d_bY'].min()
+print("The latest date:", latest_date)
+print("The earliest date:", earliest_date)
+
+# Correct column name 'next_pymnt_d' and format '%b-%y'
+loan['months_since_next_pymnt_d'] = round(reference_year - loan['next_pymnt_d_bY']).dt.days / 30
+print(loan['months_since_next_pymnt_d'].describe())
+loan.drop(['next_pymnt_d', 'next_pymnt_d_bY'], axis=1, inplace=True)
+
+# 'last_credit_pull_d' column
+loan['last_credit_pull_d']
+# The last_credit_pull_d column contains strings, such as "Jan-15"
+loan['last_credit_pull_d_bY'] = pd.to_datetime(loan['last_credit_pull_d'], format='%b-%y')
+latest_date = loan['last_credit_pull_d_bY'].max()
+earliest_date = loan['last_credit_pull_d_bY'].min()
+print("The latest date:", latest_date)
+print("The earliest date:", earliest_date)
+
+# Correct column name 'last_credit_pull_d' and format '%b-%y'
+loan['months_since_last_credit_pull_d'] = round(reference_year - loan['last_credit_pull_d_bY']).dt.days / 30
+print(loan['months_since_last_credit_pull_d'].describe())
+loan.drop(['last_credit_pull_d','last_credit_pull_d_bY'], axis=1, inplace=True)
 
 # EXPLORATORY DATA ANALYSIS
 #  Check Cardinality Data
@@ -267,9 +285,12 @@ for col in cols_to_impute:
         loan[col].fillna(fill_val, inplace=True)
         print(f"Imputed '{col}' with {method}: {fill_val}")
 
-  #  Label Encoding
-  from sklearn.preprocessing import LabelEncoder
+#  Label Encoding
+from sklearn.preprocessing import LabelEncoder
 label = LabelEncoder()
+
+categorical_var = loan.select_dtypes(include='object').columns
+print(categorical_cols)
 
 for col in categorical_var:
     loan[col] = label.fit_transform(loan[col])
@@ -277,125 +298,166 @@ for col in categorical_var:
 loan.head()
 
 # Create New Feature
-# 1. Create credit_age
-loan['credit_age'] = 2017 - loan['earliest_cr_year']
-print(f"'credit_age' created. First 5 values:\n{loan['credit_age'].head()}")
-
-# 2. Create loan_to_income_ratio
+# 1. Create loan_to_income_ratio
 # Add a small epsilon to annual_inc to avoid division by zero
 epsilon = 1e-6
 loan['loan_to_income_ratio'] = loan['loan_amnt'] / (loan['annual_inc'] + epsilon)
 print(f"'loan_to_income_ratio' created. First 5 values:\n{loan['loan_to_income_ratio'].head()}")
 
-# 3. Create installment_to_income_ratio
+# 2. Create installment_to_income_ratio
 loan['installment_to_income_ratio'] = loan['installment'] / (loan['annual_inc'] + epsilon)
 print(f"'installment_to_income_ratio' created. First 5 values:\n{loan['installment_to_income_ratio'].head()}")
+
+# 3. Initialize a small constant epsilon to prevent division by zero
+epsilon = 1e-6
+
+# 4. Create revolving_burden_index
+loan['revolving_burden_index'] = loan['revol_bal'] / (loan['annual_inc'] + epsilon)
+print(f"'revolving_burden_index' created. First 5 values:\n{loan['revolving_burden_index'].head()}")
+
+# 5. Create principal_repayment_ratio
+loan['principal_repayment_ratio'] = loan['total_rec_prncp'] / (loan['loan_amnt'] + epsilon)
+print(f"'principal_repayment_ratio' created. First 5 values:\n{loan['principal_repayment_ratio'].head()}")
+
+# 6. Create payment_progress_ratio
+loan['payment_progress_ratio'] = loan['total_pymnt'] / (loan['loan_amnt'] + epsilon)
+print(f"'payment_progress_ratio' created. First 5 values:\n{loan['payment_progress_ratio'].head()}")
+
+# 7. Create interest_payment_indicator
+loan['interest_payment_indicator'] = loan['total_rec_int'] / (loan['total_pymnt'] + epsilon)
+print(f"'interest_payment_indicator' created. First 5 values:\n{loan['interest_payment_indicator'].head()}")
+
+# 8. Create funded_ratio
+loan['funded_ratio'] = loan['funded_amnt'] / (loan['loan_amnt'] + epsilon)
+print(f"'funded_ratio' created. First 5 values:\n{loan['funded_ratio'].head()}")
+
+# 9-11. Interaction Terms
+loan['loan_int_product'] = loan['loan_amnt'] * loan['int_rate']
+loan['dti_inc_product'] = loan['dti'] * loan['annual_inc']
+loan['revol_bal_util'] = loan['revol_bal'] * loan['revol_util']
+
+# 12-14. Polynomial Features
+loan['annual_inc_sq'] = loan['annual_inc'] ** 2
+loan['dti_sq'] = loan['dti'] ** 2
+
+loan['collections_per_acc'] = np.where(
+    (loan['total_acc'].notna()) & (loan['total_acc'] != 0),
+    loan['collections_12_mths_ex_med'] / loan['total_acc'],
+    np.nan
+)
+
+# Replace inf values with NaN (if any)
+loan.replace([np.inf, -np.inf], np.nan, inplace=True)
 
 print("New features added to DataFrame. Displaying head with new columns:")
 loan.head()
 
-# 4. Initialize a small constant epsilon to prevent division by zero
-epsilon = 1e-6
+# Time-Based Split
+# Sort by months_since_issue_d (smaller values = more recent issues)
+loan_sorted = loan.sort_values(by='months_since_issue_d', ascending=True).reset_index(drop=True)
 
-# 5. Create revolving_burden_index
-loan['revolving_burden_index'] = loan['revol_bal'] / (loan['annual_inc'] + epsilon)
-print(f"'revolving_burden_index' created. First 5 values:\n{loan['revolving_burden_index'].head()}")
+split_point = int(len(loan_sorted) * 0.8)
 
-# 6. Create principal_repayment_ratio
-loan['principal_repayment_ratio'] = loan['total_rec_prncp'] / (loan['loan_amnt'] + epsilon)
-print(f"'principal_repayment_ratio' created. First 5 values:\n{loan['principal_repayment_ratio'].head()}")
+X_train_time = loan_sorted.iloc[:split_point].drop('bad_status', axis=1)
+y_train_time = loan_sorted.iloc[:split_point]['bad_status']
 
-# 7. Create payment_progress_ratio
-loan['payment_progress_ratio'] = loan['total_pymnt'] / (loan['loan_amnt'] + epsilon)
-print(f"'payment_progress_ratio' created. First 5 values:\n{loan['payment_progress_ratio'].head()}")
+X_test_time = loan_sorted.iloc[split_point:].drop('bad_status', axis=1) # This will be the basis for final X_test
+y_test_time = loan_sorted.iloc[split_point:]['bad_status'] # This will be the final y_test
 
-# 8. Create interest_payment_indicator
-loan['interest_payment_indicator'] = loan['total_rec_int'] / (loan['total_pymnt'] + epsilon)
-print(f"'interest_payment_indicator' created. First 5 values:\n{loan['interest_payment_indicator'].head()}")
-
-# 9. Create funded_ratio
-loan['funded_ratio'] = loan['funded_amnt'] / (loan['loan_amnt'] + epsilon)
-print(f"'funded_ratio' created. First 5 values:\n{loan['funded_ratio'].head()}")
-
-print("New features added to DataFrame. Displaying head with all new columns:")
-loan.head()
+print(f"Shape of X_train_time (after initial time split): {X_train_time.shape}")
+print(f"Shape of y_train_time (after initial time split): {y_train_time.shape}")
+print(f"Shape of X_test_time (raw): {X_test_time.shape}")
+print(f"Shape of y_test_time (raw): {y_test_time.shape}")
 
 # Handling Imbalance Data
+# Apply SMOTE to the initial training data
 from imblearn.over_sampling import SMOTE
-from imblearn.under_sampling import RandomUnderSampler
 
-print("--- Handling Imbalanced Data ---")
-
-# Separate features (X) and target (y)
-X = loan.drop('bad_status', axis=1)
-y = loan['bad_status']
-
-print("Original target distribution:")
-print(y.value_counts(normalize=True) * 100)
-
-# Apply SMOTE for oversampling
 sm = SMOTE(random_state=42)
-X_res, y_res = sm.fit_resample(X, y)
+X_train_smoted, y_train_smoted = sm.fit_resample(X_train_time, y_train_time)
 
-print("\nTarget distribution after SMOTE oversampling:")
-print(y_res.value_counts(normalize=True) * 100)
-
-# Assign resampled data back to loan_resampled DataFrame (optional, for continuity)
-# This creates a new DataFrame for the resampled data
-loan_resampled = X_res.copy()
-loan_resampled['bad_status'] = y_res
-
-print(f"\nShape of original data: {loan.shape}")
-print(f"Shape of resampled data: {loan_resampled.shape}")
-
-# Train Test Split
-from sklearn.model_selection import train_test_split
-
-print("--- Performing Train-Test Split (with new features) ---")
-
-# Split the resampled data into training and testing sets
-# Using stratify=y_res to maintain the 50/50 class distribution in both train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X_res, y_res, test_size=0.2, random_state=42, stratify=y_res)
-
-print(f"Shape of X_train: {X_train.shape}")
-print(f"Shape of X_test: {X_test.shape}")
-print(f"Shape of y_train: {y_train.shape}")
-print(f"Shape of y_test: {y_test.shape}")
-
-print("\nTarget distribution in y_train (percentage):")
-print(y_train.value_counts(normalize=True) * 100)
-
-print("\nTarget distribution in y_test (percentage):")
-print(y_test.value_counts(normalize=True) * 100)
+print(f"\nShape of X_train_smoted (after SMOTE): {X_train_smoted.shape}")
+print(f"Shape of y_train_smoted (after SMOTE): {y_train_smoted.shape}")
+print("Target distribution in y_train_smoted (after SMOTE):\n", y_train_smoted.value_counts(normalize=True) * 100)
 
 # Standardization
-from sklearn.preprocessing import StandardScaler
-
-# Identify numerical columns for scaling
-numerical_cols = X_train.select_dtypes(include=np.number).columns
-
-# Initialize StandardScaler
+# Scale the SMOTEd training data and the time-based test data
 scaler = StandardScaler()
 
-# Fit the scaler on the training data and transform both training and testing data
-X_train[numerical_cols] = scaler.fit_transform(X_train[numerical_cols])
-X_test[numerical_cols] = scaler.transform(X_test[numerical_cols])
+# Fit ONLY on the SMOTE-resampled training set (X_train_smoted) and transform
+# Convert scaled arrays back to DataFrame to preserve column names
+X_train_scaled = scaler.fit_transform(X_train_smoted)
+X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train_smoted.columns)
 
-X_train_scaled = pd.DataFrame(X_train, columns=numerical_cols)
-X_test_scaled = pd.DataFrame(X_test, columns=numerical_cols)
+# Transform the time-based test set (X_test_time) using training statistics
+X_test_scaled = scaler.transform(X_test_time)
+X_test_scaled = pd.DataFrame(X_test_scaled, columns=X_test_time.columns)
 
-print("Standardization complete for numerical features.")
-print("First 5 rows of X_train after standardization:")
-print(X_train.head())
-print("\nFirst 5 rows of X_test after standardization:")
-print(X_test.head())
+print("\nData scaled.")
+print(f"Shape of X_train_scaled (SMOTEd and scaled): {X_train_scaled.shape}")
+print(f"Shape of X_test_scaled (time-based test, scaled): {X_test_scaled.shape}")
+
+# Train Test Split (Train and Validation Set)
+# Split the SMOTEd and Scaled training data into actual training and validation sets
+X_train_actual, X_val, y_train_actual, y_val = train_test_split(
+    X_train_scaled, y_train_smoted, test_size=0.2, stratify=y_train_smoted, random_state=42
+)
+
+print("\n--- Final Train/Validation/Test Sets ---")
+print(f"Shape of X_train_actual: {X_train_actual.shape}")
+print(f"Shape of y_train_actual: {y_train_actual.shape}")
+print(f"Shape of X_val: {X_val.shape}")
+print(f"Shape of y_val: {y_val.shape}")
+print(f"Shape of X_test (final, scaled): {X_test_scaled.shape}")
+print(f"Shape of y_test (final, raw): {y_test_time.shape}")
+
+print("\nClass distribution in y_train_actual (percentage):")
+print(y_train_actual.value_counts(normalize=True) * 100)
+
+print("\nClass distribution in y_val (percentage):")
+print(y_val.value_counts(normalize=True) * 100)
+
+# Re-assign global variables for consistency with existing notebook cells
+# X_train and y_train here represent the SMOTEd and scaled training data (before actual/val split)
+# as used by some existing cells (e.g., initial model training, RandomizedSearchCV for RF).
+# X_test and y_test are the final scaled test set from the time-based split.
+X_train = X_train_scaled
+y_train = y_train_smoted
+X_test = X_test_scaled
+y_test = y_test_time
+
+# Also ensure X_train_time and X_test_time (unscaled) are available if needed for PSI
+# (as used in cell 8MPdcMNE5pNv and the PSI monitoring function)
+X_train_time = X_train_time # Retain the unscaled time-based training set
+X_test_time = X_test_time # Retain the unscaled time-based test set
 
 # MODEL
-# Logistic Regression (simple, interpretable)
-log_clf = LogisticRegression(max_iter=1000, class_weight='balanced', n_jobs=-1)
-log_clf.fit(X_train, y_train)
+# Initialize XGBoost
+xgb_clf = XGBClassifier(
+    use_label_encoder=False,
+    eval_metric='logloss',
+    n_jobs=-1,
+    verbosity=0,
+    random_state=42
+)
 
-# Random Forest with RandomizedSearchCV (light and faster)
+# Modify the xgb_clf.fit call to use X_train_actual and eval_set with X_val
+try:
+    xgb_clf.fit(
+        X_train_actual, y_train_actual,
+        eval_set=[(X_val, y_val)],
+        early_stopping_rounds=10,
+        verbose=False
+    )
+except TypeError:
+    print("Warning: early_stopping_rounds not supported, fitting without it.")
+    xgb_clf.fit(X_train_actual, y_train_actual)
+
+# Logistic Regression (already trained on X_train, which is X_train_actual + X_val's combined data, so re-train on X_train_actual if consistency is paramount)
+log_clf = LogisticRegression(max_iter=1000, class_weight='balanced', n_jobs=-1)
+log_clf.fit(X_train_actual, y_train_actual)
+
+# Random Forest with RandomizedSearchCV (re-run as X_train_actual is smaller than X_train)
 rf_base = RandomForestClassifier(class_weight='balanced', random_state=42, n_jobs=-1)
 param_dist = {
     "n_estimators": [100, 200],
@@ -411,48 +473,29 @@ search = RandomizedSearchCV(
     random_state=42,
     n_jobs=-1
 )
-search.fit(X_train, y_train)
+search.fit(X_train_actual, y_train_actual) # Fit on X_train_actual
 rf_clf = search.best_estimator_
 print("RF best params:", search.best_params_)
 
-# XGBoost
-xgb_clf = XGBClassifier(
-    use_label_encoder=False,
-    eval_metric='logloss',
-    n_jobs=-1,
-    verbosity=0,
-    random_state=42
-)
-
-try:
-    xgb_clf.fit(
-        X_train, y_train,
-        eval_set=[(X_test, y_test)],
-        early_stopping_rounds=10,
-        verbose=False
-    )
-except TypeError:
-    print("Warning: early_stopping_rounds not supported, fitting without it.")
-    xgb_clf.fit(X_train, y_train)
-
-# Calibration (optional): calibrate RF probabilities (isotonic)
+# Calibration : calibrate RF probabilities (isotonic)
 calibrated_rf = CalibratedClassifierCV(rf_clf, cv=2, method='isotonic')
-calibrated_rf.fit(X_train, y_train)
+calibrated_rf.fit(X_train_actual, y_train_actual) # Fit on X_train_actual
 
-# Evaluation
+# Update models dictionary with newly trained models
 models = {
     "Logistic": log_clf,
     "RandomForest": calibrated_rf,
     "XGBoost": xgb_clf
 }
 
+# Evaluate Models
 eval_results = {}
 for name, m in models.items():
     if hasattr(m, "predict_proba"):
         proba = m.predict_proba(X_test)[:, 1]
     else:
         proba_raw = m.decision_function(X_test)
-        proba_raw = np.clip(proba_raw, -10, 10)
+        proba_raw = np.clip(proba_raw, -10, 10) # Clip for numerical stability
         proba = 1 / (1 + np.exp(-proba_raw))
     preds = (proba >= 0.5).astype(int)
     auc = roc_auc_score(y_test, proba)
@@ -468,7 +511,7 @@ for name, m in models.items():
     print(f"\n{name} -> AUC: {auc:.4f} | Brier: {brier:.4f}")
     print("Confusion matrix:\n", cm)
     print("Classification report:\n", classification_report(y_test, preds))
-
+    
 # Final Evaluation
 OUTDIR = 'output'
 os.makedirs(OUTDIR, exist_ok=True)
@@ -485,35 +528,44 @@ best_name = max(eval_results, key=lambda k: eval_results[k]['auc'])
 print("\nBest model by AUC:", best_name)
 best_model = models[best_name]
 
-# SHAP
 # Define feature_names for SHAP (all columns in X_train are features)
-feature_names = X_train.columns.tolist()
+# Correctly get feature names from the original DataFrame before scaling
+feature_names = X_train_time.columns.tolist()
 
 # Explainability (SHAP) - only for tree models (RF/XGB)
 try:
     import shap
-    print("\nComputing SHAP (limited to 500 samples for speed)...")
-    if best_name in ["RandomForest", "XGBoost"]:
-        tree_model = best_model
-        # If CalibratedClassifierCV is used, get the base estimator
-        if hasattr(best_model, "base_estimator_"):
-            tree_model = best_model.base_estimator_
+    import matplotlib.pyplot as plt # Ensure matplotlib is imported for plotting
+    print("\nComputing SHAP (limited to 500 samples for speed). Only top 15 features are displayed by default for readability...")
 
-        # Ensure tree_model is a valid type for TreeExplainer
-        if isinstance(tree_model, (RandomForestClassifier, XGBClassifier)):
-            explainer = shap.TreeExplainer(tree_model)
-            max_samples = 500
-            # Use X_test if available and large enough, otherwise X_train
-            X_shap = X_test if X_test.shape[0] <= max_samples else X_test[:max_samples]
-            shap_values = explainer.shap_values(X_shap)
-            if feature_names and len(feature_names) == X_shap.shape[1]:
-                shap.summary_plot(shap_values, X_shap, feature_names=feature_names, max_display=15)
-            else:
-                shap.summary_plot(shap_values, X_shap, max_display=15)
+    tree_model_for_shap = None # Initialize to None
+
+    # Explicitly use the uncalibrated base estimator for SHAP if available and appropriate
+    if best_name == "RandomForest":
+        # rf_clf is the uncalibrated RandomForestClassifier from RandomizedSearchCV
+        tree_model_for_shap = rf_clf
+    elif best_name == "XGBoost":
+        # xgb_clf is the uncalibrated XGBClassifier directly trained
+        tree_model_for_shap = xgb_clf
+    elif best_name == "XGBoost_Tuned":
+        # xgb_tuned_clf is the tuned XGBClassifier from RandomizedSearchCV
+        tree_model_for_shap = xgb_tuned_clf
+
+
+    if tree_model_for_shap is not None and isinstance(tree_model_for_shap, (RandomForestClassifier, XGBClassifier)):
+        explainer = shap.TreeExplainer(tree_model_for_shap)
+        max_samples = 500
+        # Use X_test if available and large enough, otherwise X_train
+        X_shap = X_test if X_test.shape[0] <= max_samples else X_test[:max_samples]
+        shap_values = explainer.shap_values(X_shap)
+        if feature_names and len(feature_names) == X_shap.shape[1]:
+            shap.summary_plot(shap_values, X_shap, feature_names=feature_names, max_display=15) # max_display=15 limits the shown features
         else:
-            print("SHAP TreeExplainer skipped: best model is a CalibratedClassifierCV wrapper around a non-tree-based model.")
+            shap.summary_plot(shap_values, X_shap, max_display=15) # max_display=15 limits the shown features
+        plt.show() # Display the SHAP plot
     else:
-        print("SHAP TreeExplainer skipped: best model not tree-based.")
+        print(f"SHAP TreeExplainer skipped: best model '{best_name}' is not a directly supported tree-based model for SHAP TreeExplainer, or its base estimator could not be extracted.")
+
 except Exception as e:
     print("SHAP error or not available:", e)
 
@@ -538,22 +590,21 @@ def psi(expected, actual, buckets=10):
     psi_val = np.sum((exp_perc - act_perc) * np.log(exp_perc / act_perc))
     return float(psi_val)
 
-# Use numerical_cols from previous step for PSI calculation
-# All columns in X_train are numerical after label encoding and type conversions
-psi_features = X_train.columns.tolist()[:10] # Use first 10 features for PSI example
+# Use all features in X_train_time for PSI calculation
+psi_features = X_train_time.columns.tolist() # Calculate PSI for ALL features
 psi_report_vals = {}
 for f in psi_features:
-    # Use X_train and X_test directly as they contain the processed data
-    if f in X_train.columns and f in X_test.columns:
-        psi_report_vals[f] = psi(X_train[f].dropna().values, X_test[f].dropna().values, buckets=10)
+    # Use X_train_time and X_test_time directly as they contain the processed data
+    if f in X_train_time.columns and f in X_test_time.columns:
+        psi_report_vals[f] = psi(X_train_time[f].dropna().values, X_test_time[f].dropna().values, buckets=10)
     else:
         psi_report_vals[f] = None
 
-print("\nPSI values for sample features:")
+print("\nPSI values for ALL features:")
 print(psi_report_vals)
 save_json(psi_report_vals, os.path.join(OUTDIR, "psi_values.json"))
 
-# Path psi_alert.py
+# Tentukan path psi_alert.py (pastikan file ini ada di folder OUTDIR atau sesuaikan path)
 psi_alert_path = os.path.join(OUTDIR, "psi_alert.py")
 
 # Save model artifacts, model_card, FastAPI template
@@ -599,6 +650,7 @@ with open(fastapi_path, "w") as f:
     f.write(fastapi_code)
 print("Wrote FastAPI template to", fastapi_path)
 
+print("\n--- Done ---")
 print("Outputs written to:", OUTDIR)
 print("- eval_results.json, psi_values.json, model_card.json")
 print(f"- psi_alert.py (run: python {psi_alert_path} train.csv new.csv)")
@@ -617,17 +669,67 @@ importance_series = pd.Series(feature_importances, index=feature_names)
 
 # Sort features by importance in descending order and get the top 20
 top_20_features = importance_series.nlargest(20)
+all_features = importance_series.nlargest(48)
 
-print("Top 20 Most Influential Features:")
+print("Top 10 Most Influential Features:")
 display(top_20_features)
 
-# Visualize top 20 features
+# Optional: Visualize top 20 features
 plt.figure(figsize=(10, 6))
-sns.barplot(x=top_20_features.values, y=top_20_features.index, palette='crest')
+sns.barplot(x=top_20_features.values, y=top_20_features.index, palette='plasma')
 plt.title('Top 20 Most Influential Features')
 plt.xlabel('Feature Importance')
 plt.ylabel('Feature Name')
 plt.tight_layout()
+plt.show()
+
+print("--- Calculating Feature-Target Correlations ---")
+
+# Ensure 'loan_resampled' is the DataFrame containing the balanced data
+# and 'bad_status' is the target variable
+
+# Calculate correlations with the target variable ('bad_status')
+# Use the 'loan_resampled' DataFrame which contains the balanced data with new features
+# and is where the target variable 'bad_status' still exists as a column.
+# If you've been working with X_res and y_res separately, you'd merge them first.
+
+# For this step, I will assume 'loan_resampled' as the source for correlation calculation,
+# as it is the DataFrame before train-test split and scaling, ensuring original values are used
+# for correlation.
+
+# First, let's reconstruct a full dataframe from X_res and y_res for correlation analysis.
+# This is important because X_train/X_test are scaled, which can affect correlation values.
+# The 'loan_resampled' dataframe should contain the preprocessed, balanced data.
+# If `loan_resampled` is no longer available in the current scope, we will create it from X_res and y_res.
+
+if 'loan_resampled' not in locals() or loan_resampled.empty:
+    # If loan_resampled was not explicitly saved, recreate it from X_train and y_train
+    # Ensure X_train and y_train are the SMOTEd and scaled versions for consistent correlation analysis
+    loan_resampled = X_train.copy()
+    loan_resampled['bad_status'] = y_train
+
+correlations = loan_resampled.corr(numeric_only=True)['bad_status'].sort_values(ascending=False)
+
+print("Top 20 Features Correlated with 'bad_status':")
+display(correlations.head(20))
+
+print("Bottom 20 Features Correlated with 'bad_status':")
+display(correlations.tail(20))
+
+# Visualize correlations using heatmaps
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.figure(figsize=(10, 6))
+sns.heatmap(correlations.head(20).to_frame(), annot=True, cmap='coolwarm', fmt=".2f")
+plt.title('Top 20 Positive Correlations with bad_status')
+plt.yticks(rotation=0)
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.heatmap(correlations.tail(20).to_frame(), annot=True, cmap='coolwarm', fmt=".2f")
+plt.title('Bottom 20 Negative Correlations with bad_status')
+plt.yticks(rotation=0)
 plt.show()
 
 # ROC AUC Curve
